@@ -1,0 +1,45 @@
+#!/bin/bash
+OUTPUT_FILE="/var/www/html/index.html"
+TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+
+# 1. ARP Host Discovery with Netdiscover
+NETDISCOVER_OUT=$(sudo netdiscover -i eth0 -r 10.0.2.0/24 -P 2>&1)
+
+# 2. Fast Port Sweep with Masscan
+MASSCAN_OUT=$(sudo masscan 10.0.2.0/24 -p80,443,22,135,3306 --router-ip 10.0.2.2 --rate=1000 2>&1 | grep Discovered)
+
+# 3. Service Auditing with Nmap
+NMAP_OUT=$(nmap -F 10.0.2.0/24)
+
+# Generate HTML Dashboard
+cat <<EOF > $OUTPUT_FILE
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Automated Network Port Scan Results</title>
+</head>
+<body>
+    <h1>[!] Automated Network Port Scan Results</h1>
+    <p><b>System Time:</b> $TIMESTAMP</p>
+    <h3>Target Scan Scope: 10.0.2.0/24</h3>
+
+    <h2>1. Active Host Discovery (Netdiscover)</h2>
+    <pre>
+$NETDISCOVER_OUT
+    </pre>
+
+    <h2>2. High-Speed Port Sweep (Masscan)</h2>
+    <pre>
+$MASSCAN_OUT
+    </pre>
+
+    <h2>3. Detailed Service Scan (Nmap)</h2>
+    <pre>
+$NMAP_OUT
+    </pre>
+
+    <p>Kali Linux Lab Utility Refreshes automatically every 10 minutes via Cron.</p>
+</body>
+</html>
+EOF
